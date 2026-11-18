@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSA Şifreleme Algoritması ve Asallık Testi Simülatörü</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        .math-box {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Özel kaydırma çubuğu */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-indigo-100 selection:text-indigo-900">
+
+    <!-- Üst Bilgi (Header) -->
+    <header class="bg-slate-900 text-white border-b border-slate-800 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-medium mb-2">
+                    <span>Sayılar Teorisi ve Kriptografi</span>
+                    <span>•</span>
+                    <span>Lisans Bitirme Tezi Uygulaması</span>
+                </div>
+                <h1 class="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-white">
+                    RSA Şifreleme Algoritması ve Asallık Testi Simülatörü
+                </h1>
+                <p class="text-slate-400 text-sm mt-1">
+                    Miller-Rabin Asallık Testi, Genişletilmiş Öklid Algoritması ve İkili Modüler Üs Alma (Square-and-Multiply)
+                </p>
+            </div>
+            <!-- Sekme Geçişi: Simülatör vs C# OOP Kodu -->
+            <div class="flex bg-slate-800 p-1 rounded-xl border border-slate-700 self-start md:self-center">
+                <button id="tab-sim-btn" onclick="switchMainTab('simulator')" class="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-indigo-600 text-white shadow-sm">
+                    Etkileşimli Simülatör
+                </button>
+                <button id="tab-cs-btn" onclick="switchMainTab('csharp')" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white">
+                    C# OOP Kaynak Kodu
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Bildirim / Uyarı Kutusu (Alert yerine özel mesaj alanı) -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 hidden">
+        <div id="toast-message" class="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg border border-slate-700 text-sm font-medium flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span id="toast-text">Kopyalandı!</span>
+        </div>
+    </div>
+
+    <!-- ANA İÇERİK: SİMÜLATÖR SEKMESİ -->
+    <main id="view-simulator" class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
+
+        <!-- ADIM 1: ANAHTAR ÜRETİMİ VE MILLER-RABIN ASALLIK TESTİ -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-slate-50 border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow-sm">1</span>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Anahtar Üretimi ve Miller-Rabin Asallık Testi</h2>
+                        <p class="text-xs text-slate-500">İki farklı asal sayı (p, q) seçin ve açık/gizli anahtar çiftini hesaplayın.</p>
+                    </div>
+                </div>
+                <!-- Hazır Örnek Butonları -->
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="setPreset(13, 19, 17, 'number', '72')" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition">
+                        Tez Örneği (13, 19)
+                    </button>
+                    <button onclick="setPreset(61, 53, 17, 'text', 'MATEMATİK')" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition">
+                        Orta Asallar (61, 53)
+                    </button>
+                    <button onclick="setPreset(1009, 2003, 65537, 'text', 'KRİPTOGRAFİ')" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200 transition">
+                        Büyük Asallar (1009, 2003)
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6 space-y-6">
+                <!-- p, q ve e Giriş Alanları -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <!-- p girişi -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <label for="input-p" class="text-sm font-semibold text-slate-700">Birinci Asal Sayı (p)</label>
+                            <span id="badge-p" class="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Asal ✓</span>
+                        </div>
+                        <input type="number" id="input-p" value="13" min="2" oninput="recalculateKeys()" class="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white font-mono text-base font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <p id="mr-detail-p" class="text-xs text-slate-500 mt-2 font-mono">Miller-Rabin (n-1 = 2²·3): Geçti</p>
+                    </div>
+
+                    <!-- q girişi -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <label for="input-q" class="text-sm font-semibold text-slate-700">İkinci Asal Sayı (q)</label>
+                            <span id="badge-q" class="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Asal ✓</span>
+                        </div>
+                        <input type="number" id="input-q" value="19" min="2" oninput="recalculateKeys()" class="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white font-mono text-base font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <p id="mr-detail-q" class="text-xs text-slate-500 mt-2 font-mono">Miller-Rabin (n-1 = 2¹·9): Geçti</p>
+                    </div>
+
+                    <!-- e girişi -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <label for="input-e" class="text-sm font-semibold text-slate-700">Açık Anahtar Üssü (e)</label>
+                            <button onclick="suggestValidE()" class="text-xs font-medium text-indigo-600 hover:text-indigo-800 underline">Uygun e Öner</button>
+                        </div>
+                        <input type="number" id="input-e" value="17" min="2" oninput="recalculateKeys()" class="w-full px-3.5 py-2 rounded-lg border border-slate-300 bg-white font-mono text-base font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <p id="e-status" class="text-xs text-emerald-700 mt-2 font-mono">OBEB(17, 216) = 1 ✓</p>
+                    </div>
+                </div>
+
+                <!-- Hata Mesajı Alanı (Asallık veya OBEB hatası varsa) -->
+                <div id="key-error-box" class="hidden p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm font-medium"></div>
+
+                <!-- Matematiksel Ara Hesaplamalar ve Anahtar Kartları -->
+                <div id="key-results-grid" class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                    <!-- Ara Adımlar -->
+                    <div class="lg:col-span-7 bg-slate-900 text-slate-100 p-5 rounded-xl space-y-3 font-mono text-xs sm:text-sm">
+                        <div class="text-slate-400 text-xs uppercase tracking-wider font-sans font-semibold border-b border-slate-800 pb-2">
+                            Matematiksel Hesaplama Adımları
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:justify-between gap-1">
+                            <span class="text-slate-400">1. Modül Hesabı (n = p · q):</span>
+                            <span id="calc-n" class="text-indigo-300 font-semibold">13 · 19 = 247</span>
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:justify-between gap-1">
+                            <span class="text-slate-400">2. Euler Totient φ(n) = (p-1)(q-1):</span>
+                            <span id="calc-phi" class="text-indigo-300 font-semibold">12 · 18 = 216</span>
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:justify-between gap-1">
+                            <span class="text-slate-400">3. Aralarında Asallık (Öklid):</span>
+                            <span id="calc-gcd" class="text-emerald-400">OBEB(17, 216) = 1</span>
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:justify-between gap-1">
+                            <span class="text-slate-400">4. Modüler Ters (Genişletilmiş Öklid):</span>
+                            <span id="calc-d" class="text-amber-300 font-semibold">17 · 89 ≡ 1 (mod 216) ⇒ d = 89</span>
+                        </div>
+                    </div>
+
+                    <!-- Üretilen Açık ve Gizli Anahtarlar -->
+                    <div class="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+                        <div class="p-4 rounded-xl bg-indigo-50/70 border border-indigo-200 flex flex-col justify-center">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-indigo-600">Açık Anahtar (Public Key)</span>
+                            <div id="public-key-display" class="text-lg sm:text-xl font-bold font-mono text-slate-900 mt-1">
+                                (e, n) = (17, 247)
+                            </div>
+                            <span class="text-xs text-slate-500 mt-1">Şifreleme için herkesle paylaşılır: c ≡ mᵉ (mod n)</span>
+                        </div>
+
+                        <div class="p-4 rounded-xl bg-amber-50/70 border border-amber-200 flex flex-col justify-center">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-amber-700">Gizli Anahtar (Private Key)</span>
+                            <div id="private-key-display" class="text-lg sm:text-xl font-bold font-mono text-slate-900 mt-1">
+                                (d, n) = (89, 247)
+                            </div>
+                            <span class="text-xs text-slate-500 mt-1">Deşifreleme için gizli tutulur: m ≡ cᵈ (mod n)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ADIM 2: GİRİŞ TÜRÜ SEÇİMİ (SAYI VEYA TÜRKÇE METİN) -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-slate-50 border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <span class="w-8 h-8 rounded-lg bg-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow-sm">2</span>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Şifrelenecek Veri Türü ve Girişi</h2>
+                        <p class="text-xs text-slate-500">Doğrudan bir tam sayı veya Türkçe alfabe tablosuyla kodlanacak bir metin girin.</p>
+                    </div>
+                </div>
+
+                <!-- Mod Seçici Butonlar -->
+                <div class="inline-flex rounded-xl bg-slate-200/80 p-1 self-start sm:self-center">
+                    <button id="mode-number-btn" onclick="setInputMode('number')" class="px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-white text-indigo-700 shadow-sm">
+                        Sayı Şifreleme (Tam Sayı)
+                    </button>
+                    <button id="mode-text-btn" onclick="setInputMode('text')" class="px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900">
+                        Metin Şifreleme (Türkçe Alfabe)
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6 space-y-5">
+                <!-- SAYI GİRİŞ PANELİ -->
+                <div id="panel-number" class="space-y-4">
+                    <div class="flex flex-col sm:flex-row gap-4 items-end">
+                        <div class="flex-1 w-full">
+                            <label for="input-m-number" class="block text-sm font-semibold text-slate-700 mb-1.5">
+                                Açık Metin Sayısı (m) <span id="number-range-hint" class="font-normal text-slate-500">(0 ≤ m &lt; 247 olmalıdır)</span>
+                            </label>
+                            <input type="number" id="input-m-number" value="72" min="0" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 font-mono text-base font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <button onclick="runEncryptionDecryption()" class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm shadow-sm transition flex items-center justify-center gap-2">
+                            <span>Şifrele ve Deşifrele</span>
+                            <span>→</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- METİN GİRİŞ PANELİ -->
+                <div id="panel-text" class="hidden space-y-4">
+                    <div class="flex flex-col sm:flex-row gap-4 items-end">
+                        <div class="flex-1 w-full">
+                            <label for="input-m-text" class="block text-sm font-semibold text-slate-700 mb-1.5">
+                                Şifrelenecek Türkçe Metin (Örn: MATEMATİK, KRİPTOGRAFİ, DENİZLİ)
+                            </label>
+                            <input type="text" id="input-m-text" value="MATEMATİK" maxlength="40" placeholder="Metin giriniz..." class="w-full px-4 py-2.5 rounded-xl border border-slate-300 font-sans text-base font-semibold text-slate-900 uppercase focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                        <button onclick="runEncryptionDecryption()" class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm shadow-sm transition flex items-center justify-center gap-2">
+                            <span>Metni Şifrele ve Çöz</span>
+                            <span>→</span>
+                        </button>
+                    </div>
+
+                    <!-- Türkçe Alfabe Tablosu Açılır/Kapanır Referans -->
+                    <div class="border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
+                        <button type="button" onclick="toggleAlphabetTable()" class="w-full px-4 py-2.5 text-left text-xs font-semibold text-slate-700 hover:bg-slate-100 flex items-center justify-between">
+                            <span>Türkçe 29 Harfli Sayısal Kodlama Tablosunu Göster / Gizle (A=01 ... Z=29, Boşluk=00)</span>
+                            <span id="alpha-toggle-icon" class="font-mono text-indigo-600">[Göster +]</span>
+                        </button>
+                        <div id="alphabet-table-container" class="hidden p-4 border-t border-slate-200 bg-white">
+                            <div id="alphabet-grid" class="grid grid-cols-5 sm:grid-cols-10 gap-2 text-center font-mono text-xs">
+                                <!-- JS ile doldurulacak -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Veri Doğrulama Uyarısı -->
+                <div id="data-error-box" class="hidden p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm font-medium"></div>
+            </div>
+        </section>
+
+        <!-- ADIM 3: ŞİFRELEME VE DEŞİFRELEME AŞAMALARI (SONUÇLAR) -->
+        <section id="results-section" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center gap-3">
+                <span class="w-8 h-8 rounded-lg bg-emerald-600 text-white font-bold flex items-center justify-center text-sm shadow-sm">3</span>
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">Şifreleme ve Deşifreleme İşlem Aşamaları</h2>
+                    <p class="text-xs text-slate-500">Modüler üs alma adımları ve elde edilen açık/şifreli değerler</p>
+                </div>
+            </div>
+
+            <!-- SAYI MODU SONUÇ GÖRÜNÜMÜ -->
+            <div id="result-number-view" class="p-6 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Şifreleme Kartı -->
+                    <div class="rounded-xl border border-indigo-200 bg-indigo-50/40 p-5 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold uppercase tracking-wider text-indigo-700">Aşama A: Şifreleme (Encryption)</span>
+                            <span class="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 font-mono text-xs font-semibold">c ≡ mᵉ (mod n)</span>
+                        </div>
+                        <div id="num-enc-formula" class="font-mono text-sm bg-white p-3 rounded-lg border border-indigo-100 text-slate-800">
+                            c ≡ 72¹⁷ (mod 247)
+                        </div>
+                        <div class="text-xs text-slate-600">
+                            <span class="font-semibold text-slate-700">İkili Üs Alma (Square-and-Multiply) İzlemi:</span>
+                            <div id="num-enc-steps" class="mt-1.5 font-mono text-xs bg-slate-900 text-slate-200 p-3 rounded-lg overflow-x-auto space-y-1"></div>
+                        </div>
+                        <div class="pt-2 border-t border-indigo-200/70 flex items-center justify-between">
+                            <span class="text-sm font-semibold text-slate-700">Şifreli Metin (c):</span>
+                            <span id="num-enc-output" class="text-xl font-bold font-mono text-indigo-700">128</span>
+                        </div>
+                    </div>
+
+                    <!-- Deşifreleme Kartı -->
+                    <div class="rounded-xl border border-emerald-200 bg-emerald-50/40 p-5 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">Aşama B: Deşifreleme (Decryption)</span>
+                            <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono text-xs font-semibold">m ≡ cᵈ (mod n)</span>
+                        </div>
+                        <div id="num-dec-formula" class="font-mono text-sm bg-white p-3 rounded-lg border border-emerald-100 text-slate-800">
+                            m ≡ 128⁸⁹ (mod 247)
+                        </div>
+                        <div class="text-xs text-slate-600">
+                            <span class="font-semibold text-slate-700">İkili Üs Alma (Square-and-Multiply) İzlemi:</span>
+                            <div id="num-dec-steps" class="mt-1.5 font-mono text-xs bg-slate-900 text-slate-200 p-3 rounded-lg overflow-x-auto space-y-1"></div>
+                        </div>
+                        <div class="pt-2 border-t border-emerald-200/70 flex items-center justify-between">
+                            <span class="text-sm font-semibold text-slate-700">Deşifre Edilen Açık Metin (m):</span>
+                            <span id="num-dec-output" class="text-xl font-bold font-mono text-emerald-700">72</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- METİN MODU SONUÇ GÖRÜNÜMÜ -->
+            <div id="result-text-view" class="hidden p-6 space-y-6">
+                <!-- Özet Akış Kutuları -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                        <div class="text-xs font-semibold text-slate-500 uppercase">1. Girilen Açık Metin</div>
+                        <div id="text-summary-plain" class="font-mono text-base font-bold text-slate-900 mt-1 break-all">MATEMATİK</div>
+                        <div id="text-summary-codes" class="font-mono text-xs text-slate-500 mt-1 break-all">Kodlar: [16, 01, 24, 06, 16, 01, 24, 12, 14]</div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-indigo-50 border border-indigo-200">
+                        <div class="text-xs font-semibold text-indigo-700 uppercase">2. Şifreli Sayı Dizisi (cᵢ)</div>
+                        <div id="text-summary-cipher" class="font-mono text-sm font-bold text-indigo-900 mt-1 break-all">[...]</div>
+                        <div class="text-xs text-indigo-600 mt-1">Her harf cᵢ ≡ mᵢᵉ (mod n) ile şifrelendi</div>
+                    </div>
+                    <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+                        <div class="text-xs font-semibold text-emerald-700 uppercase">3. Deşifre Edilen Metin</div>
+                        <div id="text-summary-decrypted" class="font-mono text-base font-bold text-emerald-900 mt-1 break-all">MATEMATİK</div>
+                        <div class="text-xs text-emerald-700 mt-1">mᵢ' ≡ cᵢᵈ (mod n) ile doğrulandı ✓</div>
+                    </div>
+                </div>
+
+                <!-- Karakter Bazlı Detaylı İşlem Tablosu -->
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 border-b border-slate-200 text-xs font-bold text-slate-700 uppercase">
+                                <th class="py-3 px-4">Sıra</th>
+                                <th class="py-3 px-4">Karakter</th>
+                                <th class="py-3 px-4">Alfabe Kodu (mᵢ)</th>
+                                <th class="py-3 px-4">Şifreleme İşlemi: cᵢ ≡ mᵢᵉ (mod n)</th>
+                                <th class="py-3 px-4">Şifreli Değer (cᵢ)</th>
+                                <th class="py-3 px-4">Deşifreleme İşlemi: mᵢ' ≡ cᵢᵈ (mod n)</th>
+                                <th class="py-3 px-4">Çözülen Kod</th>
+                                <th class="py-3 px-4">Çözülen Harf</th>
+                            </tr>
+                        </thead>
+                        <tbody id="text-steps-tbody" class="divide-y divide-slate-200 font-mono text-xs sm:text-sm">
+                            <!-- JS ile doldurulacak -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- İKİNCİ SEKME: C# NESNE TABANLI (OOP) KAYNAK KODU -->
+    <main id="view-csharp" class="hidden flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-slate-900 text-white px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <h2 class="text-lg font-bold">C# Nesne Tabanlı (OOP) RSA ve Miller-Rabin Uygulaması</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Tez ekine doğrudan koyabileceğiniz, BigInteger destekli, Türkçe alfabe tablolu tam C# kodu</p>
+                </div>
+                <button onclick="copyCSharpCode()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold transition flex items-center gap-2 self-start sm:self-center">
+                    <span>C# Kodunu Kopyala</span>
+                </button>
+            </div>
+            <div class="p-6 bg-slate-950 text-slate-100 overflow-x-auto">
+                <pre id="csharp-source-code" class="font-mono text-xs sm:text-sm leading-relaxed">using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Numerics;
+using System.Text;
+
+namespace RSATezUygulamasi
+{
+    /// &lt;summary&gt;
+    /// RSA Şifreleme Algoritması, Miller-Rabin Asallık Testi ve Türkçe Alfabe Kodlaması
+    /// Nesne Tabanlı (OOP) Gerçeklenimi
+    /// &lt;/summary&gt;
+    public class RSASifrelemeSistemi
+    {
+        public BigInteger P { get; private set; }
+        public BigInteger Q { get; private set; }
+        public BigInteger N { get; private set; }
+        public BigInteger Phi { get; private set; }
+        public BigInteger E { get; private set; }
+        public BigInteger D { get; private set; }
+
+        // Türkçe 29 Harfli Alfabe Eşleme Sözlükleri (A=01 ... Z=29, Boşluk=00)
+        private static readonly Dictionary&lt;char, int&gt; HarfToKod = new Dictionary&lt;char, int&gt;
+        {
+            {' ', 0},  {'A', 1},  {'B', 2},  {'C', 3},  {'Ç', 4},  {'D', 5},
+            {'E', 6},  {'F', 7},  {'G', 8},  {'Ğ', 9},  {'H', 10}, {'I', 11},
+            {'İ', 12}, {'J', 13}, {'K', 14}, {'L', 15}, {'M', 16}, {'N', 17},
+            {'O', 18}, {'Ö', 19}, {'P', 20}, {'R', 21}, {'S', 22}, {'Ş', 23},
+            {'T', 24}, {'U', 25}, {'Ü', 26}, {'V', 27}, {'Y', 28}, {'Z', 29}
+        };
+
+        private static readonly Dictionary&lt;int, char&gt; KodToHarf = new Dictionary&lt;int, char&gt;();
+
+        static RSASifrelemeSistemi()
+        {
+            foreach (var kvp in HarfToKod)
+            {
+                KodToHarf[kvp.Value] = kvp.Key;
+            }
+        }
+
+        // Kurucu Metot (Constructor): Asallık testi yapar ve anahtarları üretir
+        public RSASifrelemeSistemi(BigInteger p, BigInteger q, BigInteger e)
+        {
+            if (!MillerRabinAsalMi(p))
+                throw new ArgumentException($"Girilen p = {p} sayısı Miller-Rabin testine göre asal değildir!");
+            if (!MillerRabinAsalMi(q))
+                throw new ArgumentException($"Girilen q = {q} sayısı Miller-Rabin testine göre asal değildir!");
+            if (p == q)
+                throw new ArgumentException("Güvenlik gereği p ve q birbirinden farklı asal sayılar olmalıdır.");
+
+            P = p;
+            Q = q;
+            N = p * q;
+            Phi = (p - 1) * (q - 1);
+
+            if (e &lt;= 1 || e &gt;= Phi || Obeb(e, Phi) != 1)
+                throw new ArgumentException($"Seçilen e = {e} değeri 1 &lt; e &lt; {Phi} aralığında ve phi(n) ile aralarında asal olmalıdır.");
+
+            E = e;
+            D = ModulerTers(E, Phi);
+        }
+
+        // Öklid Algoritması ile OBEB Hesabı
+        public static BigInteger Obeb(BigInteger a, BigInteger b)
+        {
+            while (b != 0)
+            {
+                BigInteger temp = b;
+                b = a % b;
+                a = temp;
+            }
+            return a;
+        }
+
+        // Genişletilmiş Öklid Algoritması ile Modüler Ters: (e * d) % phi == 1
+        public static BigInteger ModulerTers(BigInteger e, BigInteger phi)
+        {
+            BigInteger m0 = phi, t, q;
+            BigInteger x0 = 0, x1 = 1;
+
+            if (phi == 1) return 0;
+
+            while (e &gt; 1)
+            {
+                q = e / phi;
+                t = phi;
+                phi = e % phi;
+                e = t;
+                t = x0;
+                x0 = x1 - q * x0;
+                x1 = t;
+            }
+
+            return x1 &lt; 0 ? x1 + m0 : x1;
+        }
+
+        // Hızlı Modüler Üs Alma (Square-and-Multiply): (taban^us) % mod
+        public static BigInteger ModulerUs(BigInteger taban, BigInteger us, BigInteger mod)
+        {
+            BigInteger sonuc = 1;
+            taban %= mod;
+
+            while (us &gt; 0)
+            {
+                if ((us &amp; 1) == 1)
+                    sonuc = (sonuc * taban) % mod;
+
+                us &gt;&gt;= 1;
+                taban = (taban * taban) % mod;
+            }
+            return sonuc;
+        }
+
+        // Miller-Rabin Asallık Testi
+        public static bool MillerRabinAsalMi(BigInteger n)
+        {
+            if (n &lt;= 1 || n == 4) return false;
+            if (n &lt;= 3) return true;
+            if (n % 2 == 0) return false;
+
+            BigInteger d = n - 1;
+            while (d % 2 == 0)
+                d /= 2;
+
+            BigInteger[] taniklar = { 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37 };
+            foreach (BigInteger a in taniklar)
+            {
+                if (a &gt;= n) break;
+                if (!MillerTanikTesti(d, n, a))
+                    return false;
+            }
+            return true;
+        }
+
+        private static bool MillerTanikTesti(BigInteger d, BigInteger n, BigInteger a)
+        {
+            BigInteger x = ModulerUs(a, d, n);
+            if (x == 1 || x == n - 1) return true;
+
+            while (d != n - 1)
+            {
+                x = (x * x) % n;
+                d *= 2;
+                if (x == 1) return false;
+                if (x == n - 1) return true;
+            }
+            return false;
+        }
+
+        // Sayı Şifreleme ve Çözme
+        public BigInteger SayiSifrele(BigInteger m)
+        {
+            if (m &lt; 0 || m &gt;= N)
+                throw new ArgumentOutOfRangeException($"Mesaj (m) 0 &lt;= m &lt; {N} aralığında olmalıdır.");
+            return ModulerUs(m, E, N);
+        }
+
+        public BigInteger SayiDesifrele(BigInteger c)
+        {
+            return ModulerUs(c, D, N);
+        }
+
+        // Türkçe Metin Şifreleme ve Çözme
+        public List&lt;BigInteger&gt; MetinSifrele(string metin)
+        {
+            if (N &lt;= 29)
+                throw new InvalidOperationException("Türkçe alfabe kodlaması (00-29) için n = p * q &gt; 29 olmalıdır!");
+
+            string buyukMetin = metin.ToUpper(new CultureInfo("tr-TR"));
+            var sifreliListe = new List&lt;BigInteger&gt;();
+
+            Console.WriteLine("\n--- METİN ŞİFRELEME AŞAMALARI ---");
+            foreach (char ch in buyukMetin)
+            {
+                if (!HarfToKod.ContainsKey(ch))
+                    throw new ArgumentException($"Desteklenmeyen karakter: '{ch}'. Lütfen yalnızca Türkçe alfabe harfleri kullanınız.");
+
+                int kod = HarfToKod[ch];
+                BigInteger c = SayiSifrele(kod);
+                sifreliListe.Add(c);
+                Console.WriteLine($"Harf: '{ch}' -&gt; Kod: {kod:D2} -&gt; Şifreli: {kod}^{E} mod {N} = {c}");
+            }
+            return sifreliListe;
+        }
+
+        public string MetinDesifrele(List&lt;BigInteger&gt; sifreliListe)
+        {
+            var sb = new StringBuilder();
+            Console.WriteLine("\n--- METİN DEŞİFRELEME AŞAMALARI ---");
+            foreach (BigInteger c in sifreliListe)
+            {
+                BigInteger cozulenKod = SayiDesifrele(c);
+                char harf = KodToHarf[(int)cozulenKod];
+                sb.Append(harf);
+                Console.WriteLine($"Şifreli: {c} -&gt; Çözülen Kod: {c}^{D} mod {N} = {(int)cozulenKod:D2} -&gt; Harf: '{harf}'");
+            }
+            return sb.ToString();
+        }
+    }
+
+    class Program
+    {
+        static void Main()
+        {
+            Console.OutputEncoding = Encoding.UTF8;
+            Console.WriteLine("=== RSA ŞİFRELEME SİSTEMİ (C# OOP) ===");
+
+            Console.Write("1. Asal Sayı (p): ");
+            BigInteger p = BigInteger.Parse(Console.ReadLine());
+
+            Console.Write("2. Asal Sayı (q): ");
+            BigInteger q = BigInteger.Parse(Console.ReadLine());
+
+            Console.Write("Açık Anahtar Üssü (e): ");
+            BigInteger e = BigInteger.Parse(Console.ReadLine());
+
+            var rsa = new RSASifrelemeSistemi(p, q, e);
+            Console.WriteLine($"\nÜretilen Açık Anahtar: ({rsa.E}, {rsa.N})");
+            Console.WriteLine($"Üretilen Gizli Anahtar: ({rsa.D}, {rsa.N})");
+
+            Console.Write("\nSeçim Yapınız (1: Sayı Şifreleme, 2: Türkçe Metin Şifreleme): ");
+            string secim = Console.ReadLine();
+
+            if (secim == "1")
+            {
+                Console.Write($"Şifrelenecek Sayı (0 &lt;= m &lt; {rsa.N}): ");
+                BigInteger m = BigInteger.Parse(Console.ReadLine());
+                BigInteger c = rsa.SayiSifrele(m);
+                BigInteger cozulmus = rsa.SayiDesifrele(c);
+                Console.WriteLine($"\nŞifreli Sayı (c): {c}");
+                Console.WriteLine($"Deşifre Edilen Sayı (m): {cozulmus}");
+            }
+            else if (secim == "2")
+            {
+                Console.Write("Şifrelenecek Türkçe Metin: ");
+                string metin = Console.ReadLine();
+                List&lt;BigInteger&gt; sifreli = rsa.MetinSifrele(metin);
+                string cozulmusMetin = rsa.MetinDesifrele(sifreli);
+                Console.WriteLine($"\nDeşifre Edilen Nihai Metin: {cozulmusMetin}");
+            }
+        }
+    }
+}</pre>
+            </div>
+        </div>
+    </main>
+
+    <!-- Alt Bilgi (Footer) -->
+    <footer class="bg-white border-t border-slate-200 py-5 mt-12">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
+            <span>Matematik Bölümü Bitirme Tezi Uygulaması • Sayılar Teorisi ve Kriptografi</span>
+            <span>BigInt Hassasiyetli Modüler Aritmetik Motoru</span>
+        </div>
+    </footer>
+
+    <script>
+        // Türkçe 29 Harfli Alfabe Tablosu (A=01 ... Z=29, Boşluk=00)
+        const TURKISH_ALPHABET = [
+            { char: ' ', label: 'BOŞLUK', code: 0 },
+            { char: 'A', label: 'A', code: 1 },
+            { char: 'B', label: 'B', code: 2 },
+            { char: 'C', label: 'C', code: 3 },
+            { char: 'Ç', label: 'Ç', code: 4 },
+            { char: 'D', label: 'D', code: 5 },
+            { char: 'E', label: 'E', code: 6 },
+            { char: 'F', label: 'F', code: 7 },
+            { char: 'G', label: 'G', code: 8 },
+            { char: 'Ğ', label: 'Ğ', code: 9 },
+            { char: 'H', label: 'H', code: 10 },
+            { char: 'I', label: 'I', code: 11 },
+            { char: 'İ', label: 'İ', code: 12 },
+            { char: 'J', label: 'J', code: 13 },
+            { char: 'K', label: 'K', code: 14 },
+            { char: 'L', label: 'L', code: 15 },
+            { char: 'M', label: 'M', code: 16 },
+            { char: 'N', label: 'N', code: 17 },
+            { char: 'O', label: 'O', code: 18 },
+            { char: 'Ö', label: 'Ö', code: 19 },
+            { char: 'P', label: 'P', code: 20 },
+            { char: 'R', label: 'R', code: 21 },
+            { char: 'S', label: 'S', code: 22 },
+            { char: 'Ş', label: 'Ş', code: 23 },
+            { char: 'T', label: 'T', code: 24 },
+            { char: 'U', label: 'U', code: 25 },
+            { char: 'Ü', label: 'Ü', code: 26 },
+            { char: 'V', label: 'V', code: 27 },
+            { char: 'Y', label: 'Y', code: 28 },
+            { char: 'Z', label: 'Z', code: 29 }
+        ];
+
+        const CHAR_TO_CODE = {};
+        const CODE_TO_CHAR = {};
+        TURKISH_ALPHABET.forEach(item => {
+            CHAR_TO_CODE[item.char] = item.code;
+            CODE_TO_CHAR[item.code] = item.char;
+        });
+
+        // Uygulama Durumu (State)
+        let currentMode = 'number'; // 'number' veya 'text'
+        let rsaState = {
+            valid: false,
+            p: 13n,
+            q: 19n,
+            n: 247n,
+            phi: 216n,
+            e: 17n,
+            d: 89n
+        };
+
+        // Sayfa Yüklendiğinde Referans Alfabe Tablosunu Oluştur ve İlk Hesaplamayı Yap
+        window.onload = function() {
+            renderAlphabetGrid();
+            recalculateKeys();
+        };
+
+        function renderAlphabetGrid() {
+            const grid = document.getElementById('alphabet-grid');
+            grid.innerHTML = TURKISH_ALPHABET.map(item => `
+                <div class="p-2 rounded-lg bg-slate-50 border border-slate-200 flex flex-col items-center">
+                    <span class="font-bold text-slate-900 text-xs">${item.label}</span>
+                    <span class="text-indigo-600 font-semibold text-xs mt-0.5">${String(item.code).padStart(2, '0')}</span>
+                </div>
+            `).join('');
+        }
+
+        function toggleAlphabetTable() {
+            const container = document.getElementById('alphabet-table-container');
+            const icon = document.getElementById('alpha-toggle-icon');
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                icon.textContent = '[Gizle -]';
+            } else {
+                container.classList.add('hidden');
+                icon.textContent = '[Göster +]';
+            }
+        }
+
+        function switchMainTab(tab) {
+            const simView = document.getElementById('view-simulator');
+            const csView = document.getElementById('view-csharp');
+            const simBtn = document.getElementById('tab-sim-btn');
+            const csBtn = document.getElementById('tab-cs-btn');
+
+            if (tab === 'simulator') {
+                simView.classList.remove('hidden');
+                csView.classList.add('hidden');
+                simBtn.className = 'px-4 py-2 rounded-lg text-sm font-medium transition-all bg-indigo-600 text-white shadow-sm';
+                csBtn.className = 'px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white';
+            } else {
+                simView.classList.add('hidden');
+                csView.classList.remove('hidden');
+                csBtn.className = 'px-4 py-2 rounded-lg text-sm font-medium transition-all bg-indigo-600 text-white shadow-sm';
+                simBtn.className = 'px-4 py-2 rounded-lg text-sm font-medium transition-all text-slate-300 hover:text-white';
+            }
+        }
+
+        function showToast(msg) {
+            const container = document.getElementById('toast-container');
+            const text = document.getElementById('toast-text');
+            text.textContent = msg;
+            container.classList.remove('hidden');
+            setTimeout(() => {
+                container.classList.add('hidden');
+            }, 2800);
+        }
+
+        function copyCSharpCode() {
+            const codeEl = document.getElementById('csharp-source-code');
+            const textarea = document.createElement('textarea');
+            textarea.value = codeEl.textContent;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast('C# OOP kaynak kodu panoya kopyalandı!');
+        }
+
+        // --- MATEMATİKSEL FONKSİYONLAR (BigInt) ---
+
+        // Öklid Algoritması (OBEB)
+        function gcdBigInt(a, b) {
+            a = a < 0n ? -a : a;
+            b = b < 0n ? -b : b;
+            while (b !== 0n) {
+                let t = b;
+                b = a % b;
+                a = t;
+            }
+            return a;
+        }
+
+        // Genişletilmiş Öklid Algoritması: e * d ≡ 1 (mod phi)
+        function modInverseBigInt(e, phi) {
+            let m0 = phi;
+            let x0 = 0n;
+            let x1 = 1n;
+
+            if (phi === 1n) return 0n;
+
+            let a = e;
+            let b = phi;
+
+            while (a > 1n) {
+                let q = a / b;
+                let t = b;
+                b = a % b;
+                a = t;
+                t = x0;
+                x0 = x1 - q * x0;
+                x1 = t;
+            }
+
+            if (x1 < 0n) x1 += m0;
+            return x1;
+        }
+
+        // Hızlı Modüler Üs Alma (Square-and-Multiply) + Adım Kaydı
+        function modPowWithTrace(base, exp, mod) {
+            if (mod === 1n) return { result: 0n, steps: ['mod = 1 olduğu için sonuç 0'] };
+            let result = 1n;
+            let b = ((base % mod) + mod) % mod;
+            let e = exp;
+            const steps = [];
+            const binStr = exp.toString(2);
+
+            steps.push(`Üs (${exp}) ikili tabanda: (${binStr})₂`);
+            steps.push(`Başlangıç: sonuç = 1, taban = ${b} (mod ${mod})`);
+
+            let bitIndex = 0;
+            while (e > 0n) {
+                const bit = e & 1n;
+                if (bit === 1n) {
+                    const prevRes = result;
+                    result = (result * b) % mod;
+                    steps.push(`Bit ${bitIndex} (=1): sonuç = (${prevRes} · ${b}) mod ${mod} = ${result}`);
+                } else {
+                    steps.push(`Bit ${bitIndex} (=0): sonuç değişmez (${result})`);
+                }
+                e >>= 1n;
+                if (e > 0n) {
+                    const prevB = b;
+                    b = (b * b) % mod;
+                    steps.push(`   ↳ Kare alma: taban = ${prevB}² mod ${mod} = ${b}`);
+                }
+                bitIndex++;
+            }
+
+            return { result, steps };
+        }
+
+        // Miller-Rabin Asallık Testi (Deterministik 64-bit Tanık Kümesi ile)
+        function millerRabinTest(n) {
+            if (n <= 1n || n === 4n) {
+                return { isPrime: false, detail: 'n ≤ 1 veya 4 olduğu için asal değil' };
+            }
+            if (n <= 3n) {
+                return { isPrime: true, detail: 'Küçük asal sayı (2 veya 3)' };
+            }
+            if (n % 2n === 0n) {
+                return { isPrime: false, detail: 'Çift sayı (2’ye bölünür)' };
+            }
+
+            // n - 1 = 2^s * d ayrıştırması
+            let d = n - 1n;
+            let s = 0;
+            while (d % 2n === 0n) {
+                d /= 2n;
+                s++;
+            }
+
+            const witnesses = [2n, 3n, 5n, 7n, 11n, 13n, 17n, 19n, 23n, 29n, 31n, 37n];
+            for (let a of witnesses) {
+                if (a >= n) break;
+                let x = modPowWithTrace(a, d, n).result;
+                if (x === 1n || x === n - 1n) continue;
+
+                let composite = true;
+                let dTemp = d;
+                while (dTemp !== n - 1n) {
+                    x = (x * x) % n;
+                    dTemp *= 2n;
+                    if (x === 1n) {
+                        return { isPrime: false, detail: `a=${a} tanığı ile bileşik bulundu` };
+                    }
+                    if (x === n - 1n) {
+                        composite = false;
+                        break;
+                    }
+                }
+                if (composite) {
+                    return { isPrime: false, detail: `a=${a} tanığı ile bileşik bulundu` };
+                }
+            }
+
+            return {
+                isPrime: true,
+                detail: `Miller-Rabin (n-1 = 2^${s}·${d}): Geçti`
+            };
+        }
+
+        // --- ARAYÜZ GÜNCELLEME VE DOĞRULAMA ---
+
+        function setPreset(p, q, e, mode, val) {
+            document.getElementById('input-p').value = p;
+            document.getElementById('input-q').value = q;
+            document.getElementById('input-e').value = e;
+            setInputMode(mode, false);
+            if (mode === 'number') {
+                document.getElementById('input-m-number').value = val;
+            } else {
+                document.getElementById('input-m-text').value = val;
+            }
+            recalculateKeys();
+        }
+
+        function setInputMode(mode, triggerRun = true) {
+            currentMode = mode;
+            const numBtn = document.getElementById('mode-number-btn');
+            const txtBtn = document.getElementById('mode-text-btn');
+            const numPanel = document.getElementById('panel-number');
+            const txtPanel = document.getElementById('panel-text');
+
+            if (mode === 'number') {
+                numBtn.className = 'px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-white text-indigo-700 shadow-sm';
+                txtBtn.className = 'px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900';
+                numPanel.classList.remove('hidden');
+                txtPanel.classList.add('hidden');
+            } else {
+                txtBtn.className = 'px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all bg-white text-indigo-700 shadow-sm';
+                numBtn.className = 'px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all text-slate-600 hover:text-slate-900';
+                txtPanel.classList.remove('hidden');
+                numPanel.classList.add('hidden');
+            }
+
+            if (triggerRun && rsaState.valid) {
+                runEncryptionDecryption();
+            }
+        }
+
+        function suggestValidE() {
+            const pVal = document.getElementById('input-p').value.trim();
+            const qVal = document.getElementById('input-q').value.trim();
+            if (!pVal || !qVal) return;
+
+            const p = BigInt(pVal);
+            const q = BigInt(qVal);
+            const phi = (p - 1n) * (q - 1n);
+
+            const candidates = [3n, 5n, 7n, 11n, 13n, 17n, 19n, 23n, 29n, 31n, 257n, 65537n];
+            for (let c of candidates) {
+                if (c < phi && gcdBigInt(c, phi) === 1n) {
+                    document.getElementById('input-e').value = c.toString();
+                    recalculateKeys();
+                    return;
+                }
+            }
+            for (let c = 3n; c < phi; c += 2n) {
+                if (gcdBigInt(c, phi) === 1n) {
+                    document.getElementById('input-e').value = c.toString();
+                    recalculateKeys();
+                    return;
+                }
+            }
+        }
+
+        function recalculateKeys() {
+            const pStr = document.getElementById('input-p').value.trim();
+            const qStr = document.getElementById('input-q').value.trim();
+            const eStr = document.getElementById('input-e').value.trim();
+
+            const badgeP = document.getElementById('badge-p');
+            const badgeQ = document.getElementById('badge-q');
+            const detailP = document.getElementById('mr-detail-p');
+            const detailQ = document.getElementById('mr-detail-q');
+            const eStatus = document.getElementById('e-status');
+            const errorBox = document.getElementById('key-error-box');
+            const resultsGrid = document.getElementById('key-results-grid');
+
+            errorBox.classList.add('hidden');
+            rsaState.valid = false;
+
+            if (!pStr || !qStr || !eStr || BigInt(pStr) < 2n || BigInt(qStr) < 2n) {
+                errorBox.textContent = 'Lütfen p, q ve e için geçerli pozitif tam sayılar giriniz.';
+                errorBox.classList.remove('hidden');
+                resultsGrid.classList.add('opacity-50');
+                return;
+            }
+
+            const p = BigInt(pStr);
+            const q = BigInt(qStr);
+            const e = BigInt(eStr);
+
+            // Miller-Rabin Testleri
+            const mrP = millerRabinTest(p);
+            const mrQ = millerRabinTest(q);
+
+            if (mrP.isPrime) {
+                badgeP.textContent = 'Asal ✓';
+                badgeP.className = 'text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800';
+            } else {
+                badgeP.textContent = 'Asal Değil ✗';
+                badgeP.className = 'text-xs font-medium px-2 py-0.5 rounded-full bg-rose-100 text-rose-800';
+            }
+            detailP.textContent = mrP.detail;
+
+            if (mrQ.isPrime) {
+                badgeQ.textContent = 'Asal ✓';
+                badgeQ.className = 'text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800';
+            } else {
+                badgeQ.textContent = 'Asal Değil ✗';
+                badgeQ.className = 'text-xs font-medium px-2 py-0.5 rounded-full bg-rose-100 text-rose-800';
+            }
+            detailQ.textContent = mrQ.detail;
+
+            if (!mrP.isPrime || !mrQ.isPrime) {
+                errorBox.textContent = `Asallık Hatası: RSA anahtar üretimi için p ve q sayılarının ikisi de asal olmalıdır. (${!mrP.isPrime ? 'p=' + p + ' asal değil. ' : ''}${!mrQ.isPrime ? 'q=' + q + ' asal değil.' : ''})`;
+                errorBox.classList.remove('hidden');
+                resultsGrid.classList.add('opacity-50');
+                return;
+            }
+
+            if (p === q) {
+                errorBox.textContent = 'Güvenlik Hatası: p ve q birbirinden farklı iki asal sayı olmalıdır (p ≠ q).';
+                errorBox.classList.remove('hidden');
+                resultsGrid.classList.add('opacity-50');
+                return;
+            }
+
+            const n = p * q;
+            const phi = (p - 1n) * (q - 1n);
+            const g = gcdBigInt(e, phi);
+
+            document.getElementById('number-range-hint').textContent = `(0 ≤ m < ${n} olmalıdır)`;
+
+            if (e <= 1n || e >= phi || g !== 1n) {
+                eStatus.textContent = `OBEB(${e}, ${phi}) = ${g} ✗`;
+                eStatus.className = 'text-xs text-rose-700 mt-2 font-mono';
+                errorBox.textContent = `Açık Anahtar Hatası: e = ${e} değeri 1 < e < ${phi} aralığında olmalı ve φ(n) = ${phi} ile aralarında asal (OBEB = 1) olmalıdır.`;
+                errorBox.classList.remove('hidden');
+                resultsGrid.classList.add('opacity-50');
+                return;
+            }
+
+            eStatus.textContent = `OBEB(${e}, ${phi}) = 1 ✓`;
+            eStatus.className = 'text-xs text-emerald-700 mt-2 font-mono';
+
+            const d = modInverseBigInt(e, phi);
+
+            rsaState = { valid: true, p, q, n, phi, e, d };
+            resultsGrid.classList.remove('opacity-50');
+
+            // Hesaplama Özetini Güncelle
+            document.getElementById('calc-n').textContent = `${p} · ${q} = ${n}`;
+            document.getElementById('calc-phi').textContent = `${p - 1n} · ${q - 1n} = ${phi}`;
+            document.getElementById('calc-gcd').textContent = `OBEB(${e}, ${phi}) = 1`;
+            document.getElementById('calc-d').textContent = `${e} · ${d} ≡ 1 (mod ${phi}) ⇒ d = ${d}`;
+
+            document.getElementById('public-key-display').textContent = `(e, n) = (${e}, ${n})`;
+            document.getElementById('private-key-display').textContent = `(d, n) = (${d}, ${n})`;
+
+            runEncryptionDecryption();
+        }
+
+        // --- ŞİFRELEME VE DEŞİFRELEME ÇALIŞTIRICI ---
+
+        function runEncryptionDecryption() {
+            const dataErrorBox = document.getElementById('data-error-box');
+            const numResultView = document.getElementById('result-number-view');
+            const txtResultView = document.getElementById('result-text-view');
+
+            dataErrorBox.classList.add('hidden');
+
+            if (!rsaState.valid) {
+                dataErrorBox.textContent = 'Önce 1. adımda geçerli asal sayılar (p, q) ve açık anahtar (e) belirlemelisiniz.';
+                dataErrorBox.classList.remove('hidden');
+                return;
+            }
+
+            const { n, e, d } = rsaState;
+
+            if (currentMode === 'number') {
+                numResultView.classList.remove('hidden');
+                txtResultView.classList.add('hidden');
+
+                const mStr = document.getElementById('input-m-number').value.trim();
+                if (!mStr) {
+                    dataErrorBox.textContent = 'Lütfen şifrelenecek bir tam sayı (m) giriniz.';
+                    dataErrorBox.classList.remove('hidden');
+                    return;
+                }
+
+                const m = BigInt(mStr);
+                if (m < 0n || m >= n) {
+                    dataErrorBox.textContent = `Modül Sınır Hatası: Girilen mesaj sayısı m = ${m}, 0 ≤ m < n (${n}) aralığında olmalıdır!`;
+                    dataErrorBox.classList.remove('hidden');
+                    return;
+                }
+
+                // Şifreleme: c ≡ m^e (mod n)
+                const encTrace = modPowWithTrace(m, e, n);
+                const c = encTrace.result;
+
+                // Deşifreleme: m' ≡ c^d (mod n)
+                const decTrace = modPowWithTrace(c, d, n);
+                const recoveredM = decTrace.result;
+
+                document.getElementById('num-enc-formula').textContent = `c ≡ ${m}^${e} (mod ${n})`;
+                document.getElementById('num-enc-steps').innerHTML = encTrace.steps.map(s => `<div>${s}</div>`).join('');
+                document.getElementById('num-enc-output').textContent = c.toString();
+
+                document.getElementById('num-dec-formula').textContent = `m ≡ ${c}^${d} (mod ${n})`;
+                document.getElementById('num-dec-steps').innerHTML = decTrace.steps.map(s => `<div>${s}</div>`).join('');
+                document.getElementById('num-dec-output').textContent = recoveredM.toString();
+
+            } else {
+                // TÜRKÇE METİN ŞİFRELEME MODU
+                numResultView.classList.add('hidden');
+                txtResultView.classList.remove('hidden');
+
+                if (n <= 29n) {
+                    dataErrorBox.textContent = `Modül Boyutu Yetersiz: Türkçe alfabe tablosundaki harfler 00 ile 29 arasında kodlandığı için n = p · q > 29 olmalıdır (Mevcut n = ${n}). Lütfen daha büyük asal sayılar seçiniz.`;
+                    dataErrorBox.classList.remove('hidden');
+                    txtResultView.classList.add('hidden');
+                    return;
+                }
+
+                const rawText = document.getElementById('input-m-text').value;
+                if (!rawText || rawText.trim().length === 0) {
+                    dataErrorBox.textContent = 'Lütfen şifrelenecek bir Türkçe metin giriniz.';
+                    dataErrorBox.classList.remove('hidden');
+                    txtResultView.classList.add('hidden');
+                    return;
+                }
+
+                // Türkçe büyük harf dönüşümü (i -> İ, ı -> I uyumlu)
+                const upperText = rawText.toLocaleUpperCase('tr-TR');
+                const chars = Array.from(upperText);
+
+                // Desteklenmeyen karakter kontrolü
+                for (let ch of chars) {
+                    if (CHAR_TO_CODE[ch] === undefined) {
+                        dataErrorBox.textContent = `Geçersiz Karakter: '${ch}' karakteri Türkçe 29 harfli alfabe tablosunda bulunmuyor. Lütfen yalnızca Türkçe harfler ve boşluk kullanınız.`;
+                        dataErrorBox.classList.remove('hidden');
+                        txtResultView.classList.add('hidden');
+                        return;
+                    }
+                }
+
+                const plainCodes = [];
+                const cipherNumbers = [];
+                const recoveredChars = [];
+                const rowsHtml = [];
+
+                chars.forEach((ch, idx) => {
+                    const mCode = BigInt(CHAR_TO_CODE[ch]);
+                    const cVal = modPowWithTrace(mCode, e, n).result;
+                    const decCode = modPowWithTrace(cVal, d, n).result;
+                    const decChar = CODE_TO_CHAR[Number(decCode)] || '?';
+
+                    const formattedCode = String(mCode).padStart(2, '0');
+                    const formattedDecCode = String(decCode).padStart(2, '0');
+                    const displayChar = ch === ' ' ? '[BOŞLUK]' : ch;
+                    const displayDecChar = decChar === ' ' ? '[BOŞLUK]' : decChar;
+
+                    plainCodes.push(formattedCode);
+                    cipherNumbers.push(cVal.toString());
+                    recoveredChars.push(decChar);
+
+                    rowsHtml.push(`
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="py-3 px-4 text-slate-500">${idx + 1}</td>
+                            <td class="py-3 px-4 font-bold text-slate-900 font-sans">${displayChar}</td>
+                            <td class="py-3 px-4 text-slate-700">${formattedCode}</td>
+                            <td class="py-3 px-4 text-indigo-700">${mCode}^${e} mod ${n}</td>
+                            <td class="py-3 px-4 font-bold text-indigo-900 bg-indigo-50/40">${cVal}</td>
+                            <td class="py-3 px-4 text-emerald-700">${cVal}^${d} mod ${n}</td>
+                            <td class="py-3 px-4 text-slate-700">${formattedDecCode}</td>
+                            <td class="py-3 px-4 font-bold text-emerald-800 bg-emerald-50/40 font-sans">${displayDecChar}</td>
+                        </tr>
+                    `);
+                });
+
+                document.getElementById('text-summary-plain').textContent = upperText;
+                document.getElementById('text-summary-codes').textContent = `Kodlar: [${plainCodes.join(', ')}]`;
+                document.getElementById('text-summary-cipher').textContent = `[${cipherNumbers.join(', ')}]`;
+                document.getElementById('text-summary-decrypted').textContent = recoveredChars.join('');
+                document.getElementById('text-steps-tbody').innerHTML = rowsHtml.join('');
+            }
+        }
+    </script>
+</body>
+</html>
